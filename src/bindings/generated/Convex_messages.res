@@ -24,7 +24,7 @@ module Mutation_send = {
 module Query_getByRoom = {
   type input = {
   roomId: roomsId,
-  limit: option<JSON.t>,
+  limit: option<float>,
   }
   type output = array<messagesDoc>
   
@@ -121,7 +121,7 @@ module Mutation_sendAgentMessage = {
 module Query_getByAgent = {
   type input = {
   agentId: agentsId,
-  limit: option<JSON.t>,
+  limit: option<float>,
   }
   type output = array<messagesDoc>
   

@@ -172,14 +172,16 @@ function parseValidatorCall(text: string): string {
   // Optional validator: v.optional(v.string())
   const optionalMatch = call.match(/^optional\((.*)\)$/);
   if (optionalMatch) {
-    const innerValidator = parseValidatorCall(`v.${optionalMatch[1]}`);
+    // The inner content already includes 'v.' prefix
+    const innerValidator = parseValidatorCall(optionalMatch[1]);
     return `option<${innerValidator}>`;
   }
   
   // Array validator: v.array(v.string())
   const arrayMatch = call.match(/^array\((.*)\)$/);
   if (arrayMatch) {
-    const innerValidator = parseValidatorCall(`v.${arrayMatch[1]}`);
+    // The inner content already includes 'v.' prefix
+    const innerValidator = parseValidatorCall(arrayMatch[1]);
     return `array<${innerValidator}>`;
   }
   

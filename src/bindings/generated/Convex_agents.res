@@ -52,7 +52,7 @@ module Mutation_create = {
   name: string,
   description: string,
   role: string,
-  capabilities: array<JSON.t>,
+  capabilities: array<string>,
   }
   type t = input => promise<agentsId>
   

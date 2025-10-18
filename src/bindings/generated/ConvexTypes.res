@@ -18,6 +18,8 @@ external api: 'api = "api"
 @module("../../../convex/_generated/api")
 external internal: 'api = "internal"
 
+
+
 // Table document types
 
 // Document type for users table
@@ -27,7 +29,7 @@ type usersDoc = {
   name: string,
   email: string,
   avatar: option<string>,
-  status: [#online | #offline | #away],
+  status: [| #online | #offline | #away],
   lastSeen: float,
   createdAt: float,
 }
@@ -38,7 +40,7 @@ type roomsDoc = {
   @as("_creationTime") creationTime: float,
   name: string,
   description: option<string>,
-  @as("type") type_: [#public | #"private" | #direct],
+  @as("type") type_: [| #public | #"private" | #direct],
   createdBy: usersId,
   createdAt: float,
   updatedAt: float,
@@ -50,7 +52,7 @@ type roomMembersDoc = {
   @as("_creationTime") creationTime: float,
   roomId: roomsId,
   userId: usersId,
-  role: [#owner | #admin | #member],
+  role: [| #owner | #admin | #member],
   joinedAt: float,
   lastRead: option<float>,
 }
@@ -62,7 +64,7 @@ type messagesDoc = {
   roomId: roomsId,
   userId: usersId,
   content: string,
-  @as("type") type_: [#text | #image | #file | #system],
+  @as("type") type_: [| #text | #image | #file | #system],
   edited: option<bool>,
   editedAt: option<float>,
   createdAt: float,
@@ -86,7 +88,7 @@ type agentsDoc = {
   description: string,
   role: string,
   capabilities: array<string>,
-  status: [#idle | #processing | #completed | #failed],
+  status: [| #idle | #processing | #completed | #failed],
   metadata: option<JSON.t>,
   createdAt: float,
   updatedAt: float,

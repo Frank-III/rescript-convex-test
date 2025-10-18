@@ -8,7 +8,7 @@ module Mutation_create = {
   type input = {
   name: string,
   email: string,
-  avatar: option<JSON.t>,
+  avatar: option<string>,
   }
   type t = input => promise<usersId>
   
@@ -54,7 +54,7 @@ module Query_getByEmail = {
 
 module Query_list = {
   type input = {
-  limit: option<JSON.t>,
+  limit: option<float>,
   }
   type output = array<usersDoc>
   
@@ -86,8 +86,8 @@ module Mutation_updateStatus = {
 module Mutation_updateProfile = {
   type input = {
   userId: usersId,
-  name: option<JSON.t>,
-  avatar: option<JSON.t>,
+  name: option<string>,
+  avatar: option<string>,
   }
   type t = input => promise<JSON.t>
   

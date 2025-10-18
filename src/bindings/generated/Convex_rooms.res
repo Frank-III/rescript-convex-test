@@ -7,7 +7,7 @@ open ConvexTypes
 module Mutation_create = {
   type input = {
   name: string,
-  description: option<JSON.t>,
+  description: option<string>,
   @as("type") type_: string,
   userId: usersId,
   }
@@ -23,7 +23,7 @@ module Mutation_create = {
 
 module Query_list = {
   type input = {
-  userId: option<JSON.t>,
+  userId: option<usersId>,
   }
   type output = array<roomsDoc>
   
