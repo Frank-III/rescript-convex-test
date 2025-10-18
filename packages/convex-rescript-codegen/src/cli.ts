@@ -8,17 +8,17 @@ import { generateBindings } from "./generator";
 import path from "path";
 import { existsSync } from "fs";
 
-// Get the project root (2 levels up from packages/convex-rescript-codegen/src)
-const projectRoot = path.resolve(import.meta.dir, "../../..");
-
-const { values } = parseArgs({
+// Parse command line arguments
+const { values, positionals } = parseArgs({
   args: Bun.argv.slice(2),
   options: {
     watch: { type: "boolean", short: "w", default: false },
-    input: { type: "string", short: "i", default: "./convex" },
-    output: { type: "string", short: "o", default: "./src/bindings/generated" },
+    input: { type: "string", short: "i" },
+    output: { type: "string", short: "o" },
     verbose: { type: "boolean", short: "v", default: false },
+    help: { type: "boolean", short: "h", default: false },
   },
+  allowPositionals: true,
 });
 
 const log = {
@@ -28,20 +28,85 @@ const log = {
   warn: (msg: string) => console.warn(chalk.yellow("⚠"), msg),
 };
 
+function showHelp() {
+  console.log(`
+${chalk.bold.cyan("convex-rescript-codegen")}
+
+Generate type-safe ReScript bindings from Convex backend functions.
+
+${chalk.bold("Usage:")}
+  convex-rescript [options]
+
+${chalk.bold("Options:")}
+  -i, --input <path>    Input directory containing Convex functions (default: ./convex)
+  -o, --output <path>   Output directory for generated bindings (default: ./src/bindings/generated)
+  -w, --watch           Watch for changes and auto-regenerate
+  -v, --verbose         Show verbose output
+  -h, --help            Show this help message
+
+${chalk.bold("Examples:")}
+  # Generate bindings once (from current directory)
+  convex-rescript
+
+  # Watch mode
+  convex-rescript --watch
+
+  # Custom paths (relative to current directory)
+  convex-rescript -i ./backend/convex -o ./frontend/src/bindings
+  
+  # Absolute paths also work
+  convex-rescript -i /path/to/convex -o /path/to/output
+
+${chalk.dim("For more information: https://github.com/yourusername/convex-rescript-codegen")}
+`);
+}
+
 async function run() {
+  if (values.help) {
+    showHelp();
+    process.exit(0);
+  }
+
   console.log(chalk.bold.cyan("🚀 Convex ReScript Codegen"));
   
-  const inputPath = path.resolve(projectRoot, values.input as string);
-  const outputPath = path.resolve(projectRoot, values.output as string);
+  // Get current working directory (where command is invoked)
+  const cwd = await $`pwd`.text();
+  const workingDir = cwd.trim();
+  
+  // Resolve paths relative to where command is invoked
+  const inputArg = values.input || "./convex";
+  const outputArg = values.output || "./src/bindings/generated";
+  
+  // If path is absolute, use it; otherwise resolve relative to cwd
+  const inputPath = path.isAbsolute(inputArg) 
+    ? inputArg 
+    : path.resolve(workingDir, inputArg);
+  
+  const outputPath = path.isAbsolute(outputArg)
+    ? outputArg
+    : path.resolve(workingDir, outputArg);
   
   // Validate input directory exists
-  if (!existsSync(inputPath)) {
-    log.error(`Input directory not found: ${inputPath}`);
+  try {
+    // Check if directory exists and has TypeScript files
+    const result = await $`test -d ${inputPath} && ls ${inputPath}/*.ts 2>/dev/null | head -1`.quiet().text();
+    if (!result || result.trim() === "") {
+      throw new Error("No TypeScript files found");
+    }
+  } catch (error) {
+    log.error(`Input directory not found or contains no TypeScript files: ${inputPath}`);
+    log.info(`Looking for: ${inputPath}`);
+    log.info(`Current directory: ${workingDir}`);
+    log.info(`\nMake sure you're running this from your project root, or specify the convex path with -i`);
     process.exit(1);
   }
   
+  log.info(`Working directory: ${chalk.dim(workingDir)}`);
   log.info(`Input: ${chalk.dim(inputPath)}`);
   log.info(`Output: ${chalk.dim(outputPath)}`);
+  
+  // Create output directory if it doesn't exist
+  await $`mkdir -p ${outputPath}`.quiet();
   
   // Initial generation
   try {
@@ -51,77 +116,69 @@ async function run() {
     });
     const elapsed = (performance.now() - startTime).toFixed(2);
     
-    log.success(`Generated ${chalk.bold(result.functionsCount)} bindings from ${chalk.bold(result.modulesCount)} modules in ${elapsed}ms`);
+    log.success(`Generated ${result.functionsCount} bindings from ${result.modulesCount} modules in ${elapsed}ms`);
     
-    if (result.warnings.length > 0) {
-      result.warnings.forEach(warning => log.warn(warning));
+    if (result.warnings && result.warnings.length > 0) {
+      result.warnings.forEach(warn => log.warn(warn));
     }
   } catch (error) {
     log.error(`Generation failed: ${error}`);
-    if (!values.watch) process.exit(1);
+    if (values.verbose) {
+      console.error(error);
+    }
+    process.exit(1);
   }
   
-  // Watch mode with @parcel/watcher
+  // Watch mode
   if (values.watch) {
-    log.info(chalk.dim("Watching for changes..."));
+    log.info("Watching for changes...");
     
-    try {
-      const subscription = await subscribe(inputPath, async (err, events) => {
-        if (err) {
-          log.error(`Watch error: ${err}`);
-          return;
-        }
+    const subscription = await subscribe(inputPath, async (err, events) => {
+      if (err) {
+        log.error(`Watch error: ${err}`);
+        return;
+      }
+      
+      const relevantEvents = events.filter(e => 
+        e.path.endsWith('.ts') && 
+        !e.path.includes('_generated') &&
+        !e.path.includes('.d.ts')
+      );
+      
+      if (relevantEvents.length > 0) {
+        const changedFiles = relevantEvents.map(e => path.basename(e.path));
+        log.info(`Files changed: ${chalk.dim(changedFiles.join(', '))}`);
         
-        // Filter relevant events
-        const relevantEvents = events.filter(event => {
-          const filename = event.path.split('/').pop() || '';
-          return (
-            filename.endsWith(".ts") && 
-            !filename.startsWith("_") &&
-            !event.path.includes("_generated") &&
-            (event.type === "create" || event.type === "update" || event.type === "delete")
-          );
-        });
-        
-        if (relevantEvents.length > 0) {
-          console.log(); // Empty line for clarity
-          log.info(`Files changed: ${relevantEvents.map(e => e.path.split('/').pop()).join(", ")}`);
+        try {
+          const startTime = performance.now();
+          const result = await generateBindings(inputPath, outputPath, { 
+            verbose: values.verbose 
+          });
+          const elapsed = (performance.now() - startTime).toFixed(2);
           
-          try {
-            const startTime = performance.now();
-            const result = await generateBindings(inputPath, outputPath, { 
-              verbose: values.verbose 
-            });
-            const elapsed = (performance.now() - startTime).toFixed(2);
-            
-            log.success(`Regenerated in ${elapsed}ms`);
-            
-            if (result.warnings.length > 0) {
-              result.warnings.forEach(warning => log.warn(warning));
-            }
-          } catch (error) {
-            log.error(`Regeneration failed: ${error}`);
-          }
+          log.success(`Regenerated ${result.functionsCount} bindings in ${elapsed}ms`);
+        } catch (error) {
+          log.error(`Regeneration failed: ${error}`);
         }
-      });
-      
-      // Handle graceful shutdown
-      process.on("SIGINT", async () => {
-        console.log();
-        log.info("Shutting down watcher...");
-        await subscription.unsubscribe();
-        process.exit(0);
-      });
-      
-    } catch (error) {
-      log.error(`Failed to start watcher: ${error}`);
-      process.exit(1);
-    }
+      }
+    });
+    
+    // Handle Ctrl+C gracefully
+    const handleExit = async () => {
+      log.info("Stopping watch mode...");
+      await subscription.unsubscribe();
+      process.exit(0);
+    };
+    
+    process.on('SIGINT', handleExit);
+    process.on('SIGTERM', handleExit);
+    
+    // Keep the process alive
+    await Bun.sleep(Number.MAX_SAFE_INTEGER);
   }
 }
 
-// Run the CLI
-run().catch((error) => {
+run().catch(error => {
   log.error(`Fatal error: ${error}`);
   process.exit(1);
 });

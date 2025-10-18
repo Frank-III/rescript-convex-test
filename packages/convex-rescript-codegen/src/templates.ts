@@ -225,14 +225,5 @@ ${inputFields}
     useAction(${apiPath}["${moduleName}"]["${fn.name}"])
   }
 }
-  type t = input => promise<${outputType}>
-  
-  @module("convex/react")
-  external useAction: 'api => t = "useAction"
-  
-  let use = () => {
-    useAction(${apiPath}["${moduleName}"]["${fn.name}"])
-  }
-}
 `;
 }

@@ -1,115 +1,126 @@
-# Convex ReScript Codegen
+# convex-rescript-codegen
 
-Automatically generate type-safe ReScript bindings from your Convex backend functions using TypeScript's compiler API for accurate parsing.
+Generate type-safe ReScript bindings from your Convex backend functions. This tool parses your Convex TypeScript code using the TypeScript AST and generates idiomatic ReScript modules with proper types and React hooks.
 
-## Features
+## ✨ Features
 
-- 🚀 Automatic binding generation from Convex schema and functions
-- 🔍 Type-safe hooks for queries, mutations, and actions  
-- 📁 Support for internal and public functions
-- 👁️ Watch mode with `@parcel/watcher` for instant regeneration
-- ⚡ Blazing fast with Bun runtime
-- 🎯 Smart Skip pattern for optional queries
+- 🎯 **Type-safe bindings** - Generates fully typed ReScript modules from Convex functions
+- 🔄 **React hooks** - Ready-to-use `useQuery` and `useMutation` hooks
+- 📦 **Schema support** - Parses Convex schema to generate document types
+- 🔍 **AST-based parsing** - Uses TypeScript compiler API for accurate parsing
+- ⚡ **Blazing fast** - Powered by Bun runtime (10x faster than Node.js)
+- 👁️ **Watch mode** - Auto-regenerate on file changes with @parcel/watcher
+- 🎨 **Idiomatic ReScript** - Generates clean, idiomatic ReScript code
+- 🛡️ **Edge case handling** - Handles reserved keywords, polymorphic variants
 
-## Installation
+## 📦 Installation
 
-This package is included in the monorepo. To use it:
+This package is designed to run with Bun for best performance:
 
 ```bash
-# From the project root
-cd packages/convex-rescript-codegen
-bun install
+# Recommended: Install with Bun
+bun add -D convex-rescript-codegen
+
+# Also works with npm/yarn/pnpm (requires Bun runtime)
+npm install -D convex-rescript-codegen
 ```
 
-## Usage
+**Note:** This package requires [Bun runtime](https://bun.sh) to be installed on your system.
 
-### Generate bindings once:
+## 🚀 Quick Start
+
+1. **Install Bun if you haven't already:**
 ```bash
-bun run dev
+curl -fsSL https://bun.sh/install | bash
 ```
 
-### Watch mode (auto-regenerate on changes):
-```bash
-bun run watch
+2. **Add to your package.json scripts:**
+```json
+{
+  "scripts": {
+    "codegen": "bunx convex-rescript",
+    "codegen:watch": "bunx convex-rescript --watch"
+  }
+}
 ```
 
-### CLI Options:
+3. **Run the generator:**
 ```bash
-bun run src/cli.ts [options]
+bun run codegen
+# or directly with
+bunx convex-rescript
+```
+
+3. **Use the generated bindings:**
+```rescript
+// Your generated bindings are in src/bindings/generated/
+open ConvexTypes
+
+@react.component
+let make = () => {
+  // Use generated query hook
+  let users = Convex_users.Query_list.use(~limit=Some(JSON.Encode.int(10)))
+  
+  // Use generated mutation hook
+  let createUser = Convex_users.Mutation_create.use()
+  
+  // Type-safe function calls
+  let handleCreate = async () => {
+    let userId = await createUser({
+      name: "Alice",
+      email: "alice@example.com"
+    })
+    Console.log2("Created:", userId)
+  }
+  
+  // Render your UI...
+}
+```
+
+## 📁 Generated File Structure
+
+```
+src/bindings/generated/
+├── ConvexTypes.res       # Document types from schema
+├── ConvexBindings.res    # Core Convex React bindings
+├── ConvexGenerated.res   # Module exports
+├── Convex_users.res      # Bindings for users.ts
+├── Convex_rooms.res      # Bindings for rooms.ts
+└── Convex_messages.res   # Bindings for messages.ts
+```
+
+## 🔧 Configuration
+
+### Command Line Options
+
+```bash
+convex-rescript [options]
 
 Options:
-  -w, --watch     Watch for changes and auto-regenerate
-  -i, --input     Input directory (default: ./convex)
-  -o, --output    Output directory (default: ./src/bindings/generated)
-  -v, --verbose   Verbose output
+  -i, --input <path>    Input directory (default: ./convex)
+  -o, --output <path>   Output directory (default: ./src/bindings/generated)
+  -w, --watch           Watch for changes
+  -v, --verbose         Verbose output
+  -h, --help            Show help
 ```
 
-## Generated Code Structure
+### Examples
 
-For each Convex module, the codegen creates:
+```bash
+# Basic usage (uses defaults)
+convex-rescript
 
-### Query Example
-```rescript
-module Query_list = {
-  type output = JSON.t
-  
-  @module("convex/react")
-  external useQuery: ('api, unit) => option<output> = "useQuery"
-  
-  let use = () => {
-    useQuery(api["agents"]["list"], ())
-  }
-}
+# Watch mode
+convex-rescript --watch
+
+# Custom paths
+convex-rescript -i ./backend/convex -o ./frontend/src/bindings
+
+# Verbose output for debugging
+convex-rescript --verbose
 ```
 
-### Mutation Example
-```rescript
-module Mutation_create = {
-  type input = {
-    name: string,
-    description: string,
-    role: string,
-  }
-  type t = input => promise<JSON.t>
-  
-  @module("convex/react")
-  external useMutation: 'api => t = "useMutation"
-  
-  let use = () => {
-    useMutation(api["agents"]["create"])
-  }
-}
-```
-
-### Skip Pattern for Optional Queries
-```rescript
-module Query_getById = {
-  type input_ = { id: string }
-  @unboxed type input = Input(input_) | Skip(string)
-  type output = JSON.t
-  
-  @module("convex/react")
-  external useQuery: ('api, input) => option<output> = "useQuery"
-  
-  let use = (~skip=false, ~id) => {
-    if skip {
-      useQuery(api["agents"]["getById"], Skip("skip"))
-    } else {
-      useQuery(api["agents"]["getById"], Input({id: id}))
-    }
-  }
-}
-```
-
-## How It Works
-
-1. **Parse**: Reads all TypeScript files in your Convex directory
-2. **Extract**: Identifies exported queries, mutations, and actions
-3. **Transform**: Maps Convex types to ReScript types
-4. **Generate**: Creates type-safe ReScript modules with hooks
-5. **Watch**: Monitors changes and regenerates automatically
-
-## Type Mappings
+## 📝 Type Mappings
 
 | Convex Type | ReScript Type |
 |------------|--------------|
@@ -117,27 +128,153 @@ module Query_getById = {
 | `v.number()` | `float` |
 | `v.boolean()` | `bool` |
 | `v.null()` | `unit` |
-| `v.id("table")` | `convexId<"table">` |
+| `v.id("table")` | `tableId` (e.g., `usersId`) |
 | `v.optional(...)` | `option<...>` |
 | `v.array(...)` | `array<...>` |
-| `v.object(...)` | `Dict.t<string, JSON.t>` |
+| `v.object(...)` | `JSON.t` |
 | `v.any()` | `JSON.t` |
+| `v.union(...)` | Polymorphic variants |
+| `v.literal(...)` | Polymorphic variants |
 
-## Development
+## 🎯 Generated Code Examples
 
-```bash
-# Run tests
-bun test
-
-# Build for production
-bun build ./src/cli.ts --outdir ./dist --target node
+### Query with no arguments
+```rescript
+module Query_list = {
+  type output = array<usersDoc>
+  
+  @module("convex/react")
+  external useQuery: ('api, unit) => option<output> = "useQuery"
+  
+  let use = () => {
+    useQuery(api["users"]["list"], ())
+  }
+}
 ```
 
-## Future Improvements
+### Query with arguments
+```rescript
+module Query_getById = {
+  type input = {
+    userId: usersId,
+  }
+  type output = option<usersDoc>
+  
+  @module("convex/react")
+  external useQuery: ('api, input) => option<output> = "useQuery"
+  
+  let use = (~userId) => {
+    useQuery(api["users"]["getById"], {
+      userId: userId
+    })
+  }
+}
+```
 
-- [ ] Parse return types from Convex functions
-- [ ] Generate types from Convex schema
-- [ ] Support for complex validator types
-- [ ] Custom type mappings via config
-- [ ] Integration with convex-helpers
+### Mutation
+```rescript
+module Mutation_create = {
+  type input = {
+    name: string,
+    email: string,
+    avatar: option<string>,
+  }
+  type t = input => promise<usersId>
+  
+  @module("convex/react")
+  external useMutation: 'api => t = "useMutation"
+  
+  let use = () => {
+    useMutation(api["users"]["create"])
+  }
+}
+```
+
+### Document Types from Schema
+```rescript
+type usersDoc = {
+  @as("_id") id: usersId,
+  @as("_creationTime") creationTime: float,
+  name: string,
+  email: string,
+  avatar: option<string>,
+  status: [| #online | #offline | #away],
+  lastSeen: float,
+  createdAt: float,
+}
+```
+
+## 🛡️ Edge Case Handling
+
+### Reserved Keywords
+The generator automatically escapes ReScript reserved keywords:
+- `type` → `type_` with `@as("type")`
+- `private` → `#"private"` in polymorphic variants
+
+### Polymorphic Variants
+Convex string unions are converted to ReScript polymorphic variants:
+```typescript
+// Convex
+status: v.union(
+  v.literal("online"),
+  v.literal("offline"),
+  v.literal("away")
+)
+```
+```rescript
+// ReScript
+status: [| #online | #offline | #away]
+```
+
+## 🤝 Requirements
+
+- **Bun runtime 1.0+** (required) - [Install Bun](https://bun.sh)
+- ReScript v11+ (tested with v12 RC)
+- Convex backend with TypeScript functions
+- React project (for the generated hooks)
+
+## 🐛 Known Limitations
+
+1. **Complex nested types** - Very complex nested object types default to `JSON.t`
+2. **Function return types** - Currently infers common patterns, not all return types
+3. **Convex validators** - Complex validator compositions may not be fully supported
+4. **Actions** - Limited support for Convex actions (treated similar to mutations)
+
+## 🚧 Roadmap
+
+- [ ] Full return type inference from function implementations
+- [ ] Support for Convex HTTP endpoints
+- [ ] Custom type mapping configuration
 - [ ] Generate mock data for testing
+- [ ] VS Code extension for instant generation
+- [ ] Support for convex-helpers library patterns
+
+## 📄 License
+
+MIT
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 🙏 Acknowledgments
+
+- Built for the ReScript and Convex communities
+- Inspired by GraphQL Code Generator and similar tools
+- Uses ts-morph for robust TypeScript AST parsing
+
+## 📚 Resources
+
+- [ReScript Documentation](https://rescript-lang.org)
+- [Convex Documentation](https://docs.convex.dev)
+- [Project Repository](https://github.com/yourusername/convex-rescript-codegen)
+
+---
+
+Made with ❤️ for type-safe full-stack development

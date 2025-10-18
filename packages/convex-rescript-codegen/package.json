@@ -1,12 +1,27 @@
 {
   "name": "convex-rescript-codegen",
   "version": "0.1.0",
-  "private": true,
+  "description": "Generate type-safe ReScript bindings from Convex backend functions",
+  "keywords": [
+    "convex",
+    "rescript",
+    "codegen",
+    "typescript",
+    "bindings",
+    "bun"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
   "type": "module",
   "main": "./src/index.ts",
   "bin": {
     "convex-rescript": "./src/cli.ts"
   },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "dev": "bun run src/cli.ts",
     "watch": "bun run src/cli.ts --watch",
@@ -14,12 +29,23 @@
   },
   "dependencies": {
     "@parcel/watcher": "^2.5.0",
-    "typescript": "^5.7.0",
     "chalk": "^5.3.0",
-    "ts-morph": "^24.0.0"
+    "ts-morph": "^24.0.0",
+    "typescript": "^5.7.0"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "@types/node": "^22.0.0"
-  }
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/frank-iii/convex-rescript-codegen"
+  },
+  "bugs": {
+    "url": "https://github.com/frank-iii/convex-rescript-codegen/issues"
+  },
+  "homepage": "https://github.com/frank-iii/convex-rescript-codegen#readme"
 }

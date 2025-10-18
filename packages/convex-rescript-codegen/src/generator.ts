@@ -1,4 +1,5 @@
 import { $ } from "bun";
+import path from "path";
 import { parseConvexFunctions } from "./parser";
 import { parseConvexSchema } from "./schema-parser";
 import { generateModuleCode } from "./templates";
@@ -70,8 +71,11 @@ export async function generateBindings(
   await Bun.write(indexFile, indexCode);
   generatedFiles.push(indexFile);
   
+  // Calculate relative path from output to convex directory
+  const relativePath = path.relative(outputPath, inputPath);
+  
   // Also generate a types file for shared types and schema
-  const typesCode = generateTypesCode(schema);
+  const typesCode = generateTypesCode(schema, relativePath);
   const typesFile = `${outputPath}/ConvexTypes.res`;
   await Bun.write(typesFile, typesCode);
   generatedFiles.push(typesFile);
@@ -106,7 +110,7 @@ function generateIndexCode(modules: string[]): string {
   return header + moduleExports + "\n";
 }
 
-function generateTypesCode(schema: Map<string, TableSchema>): string {
+function generateTypesCode(schema: Map<string, TableSchema>, relativePath: string): string {
   let code = `// AUTO-GENERATED - Shared types for Convex bindings
 // DO NOT EDIT
 
@@ -118,12 +122,15 @@ function generateTypesCode(schema: Map<string, TableSchema>): string {
     code += `type ${tableName}Id = string\n`;
   }
 
+  // Ensure the path uses forward slashes (for Windows compatibility)
+  const importPath = relativePath.replace(/\\/g, '/');
+
   code += `
 // API types from Convex
-@module("../../convex/_generated/api")
+@module("${importPath}/_generated/api")
 external api: 'api = "api"
 
-@module("../../convex/_generated/api")
+@module("${importPath}/_generated/api")
 external internal: 'api = "internal"
 
 
