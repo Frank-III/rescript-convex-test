@@ -273,7 +273,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 - [ReScript Documentation](https://rescript-lang.org)
 - [Convex Documentation](https://docs.convex.dev)
-- [Project Repository](https://github.com/yourusername/convex-rescript-codegen)
+- [Project Repository](https://github.com/Frank-III/convex-rescript-codegen)
 
 ---
 

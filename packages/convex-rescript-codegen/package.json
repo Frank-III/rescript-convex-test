@@ -2,6 +2,9 @@
   "name": "convex-rescript-codegen",
   "version": "0.1.0",
   "description": "Generate type-safe ReScript bindings from Convex backend functions",
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "convex",
     "rescript",
@@ -10,7 +13,7 @@
     "bindings",
     "bun"
   ],
-  "author": "Your Name",
+  "author": "Frank-III",
   "license": "MIT",
   "type": "module",
   "main": "./src/index.ts",
@@ -42,10 +45,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/frank-iii/convex-rescript-codegen"
+    "url": "https://github.com/Frank-III/convex-rescript-codegen"
   },
   "bugs": {
-    "url": "https://github.com/frank-iii/convex-rescript-codegen/issues"
+    "url": "https://github.com/Frank-III/convex-rescript-codegen/issues"
   },
-  "homepage": "https://github.com/frank-iii/convex-rescript-codegen#readme"
+  "homepage": "https://github.com/Frank-III/convex-rescript-codegen#readme"
 }
